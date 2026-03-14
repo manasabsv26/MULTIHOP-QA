@@ -1,9 +1,4 @@
 # Multi-Hop reasoning with RAG and Chain-of-Agents
----
-
-## Architecture
-
-<img src="architecture.png" alt="Architecture" width="600" />
 
 Traditional Retrieval-Augmented Generation (RAG) pipelines struggle with multi-hop reasoning due to retrieval noise, missing intermediate facts, and difficulty in integrating dispersed information across documents. 
 
@@ -15,9 +10,11 @@ Evaluated on the MultiHop-RAG dataset, our method demonstrates significant impro
 
 For more details refer to Final report in `docs/`
 
-## Results
+## Architecture
 
-<img src="results.png" alt="Results" width="600" />
+<img src="architecture.png" alt="Architecture" width="300" />
+
+Our proposed solution is structured around four key stages: embedding and indexing the document corpus, retrieving passages semantically similar to the query, performing iterative reasoning through the CoA module, and generating the final answer using an LLM.
 
 ## Dataset - MultiHopRAG
 
@@ -34,8 +31,12 @@ To print dataset statistics:
 ```bash
 python dataset_info.py
 ```
-
 ---
+## Results
+
+<img src="results.png" alt="Results" width="600" />
+
+For more detailed explanation of results, refer to the report in `docs`
 
 ## Setup
 
@@ -57,7 +58,7 @@ DEEPINFRA_API_KEY=
 
 ## Baselines
 
-### 1. LLaMA Full-Context (`experiments/baselines/LLama/llm_llama32.py`)
+#### 1. LLaMA Full-Context (`experiments/baselines/LLama/llm_llama32.py`)
 
 Sends each query with its complete gold-evidence documents as context to a LLaMA model. No retrieval involved.
 
@@ -70,9 +71,6 @@ python llm_llama32.py --mode togetherai_free
 # Run inference with DeepInfra
 python llm_llama32.py --mode deepinfra
 
-# Print dataset stats only
-python llm_llama32.py --mode stats_only
-
 # Run a subset of queries (e.g. first 100)
 python llm_llama32.py --mode togetherai_free --start 0 --end 100 --output results_100.json
 ```
@@ -81,7 +79,7 @@ Output: `results.json` — list of `{query, gold, pred}`.
 
 ---
 
-### 2. RAG + LLM (`experiments/baselines/RAG/rag.py`)
+#### 2. RAG + LLM (`experiments/baselines/RAG/rag.py`)
 
 Indexes the corpus into Qdrant, retrieves top-10 chunks per query, then runs an LLM over retrieved context.
 
@@ -105,9 +103,9 @@ Key options: `--corpus`, `--queries`, `--retrieval_output`, `--qa_output`, `--ch
 
 ---
 
-### 3. Chain-of-Agents on Gold Context (`experiments/baselines/CoA/chainofagents.py`)
+#### 3. Chain-of-Agents on Gold Context (`experiments/baselines/CoA/chainofagents.py`)
 
-Splits gold-evidence documents into chunks and runs a worker–manager CoA pipeline. No retrieval — uses ground-truth evidence.
+Splits gold-evidence documents into chunks and runs a worker–manager CoA pipeline. No retrieval, uses ground-truth evidence.
 
 ```bash
 # Run from repo root
@@ -153,7 +151,7 @@ python retrieval_evaluate.py --path output/
 
 ## Solution
 
-### RAG + CoA — Single Retrieval (`experiments/solution/RAG_and_CoA.py`)
+#### RAG + CoA - Single Retrieval (`experiments/solution/RAG_and_CoA.py`)
 
 Retrieves top-10 chunks from Qdrant, pairs them into context windows, then runs the full CoA pipeline.
 
@@ -167,7 +165,7 @@ python experiments/solution/RAG_and_CoA.py \
 
 ---
 
-### RAG + CoA — With Re-Retrieval (`experiments/solution/RAG_and_CoA-re-retrieval.py`)
+#### RAG + CoA - With Re-Retrieval (`experiments/solution/RAG_and_CoA-re-retrieval.py`)
 
 Same as above but re-retrieves additional evidence every 2 worker steps using the running summary as an augmented query.
 
