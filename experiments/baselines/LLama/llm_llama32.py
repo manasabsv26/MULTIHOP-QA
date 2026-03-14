@@ -47,7 +47,7 @@ args = parser.parse_args()
 
 # ── API keys (set via environment variables or fill directly) ──────────────────
 DEEPINFRA_API_KEY = os.getenv("DEEPINFRA_API_KEY", "")
-TOGETHER_API_KEY  = os.getenv("TOGETHER_API_KEY", "")
+TOGETHERAI_API_KEY  = os.getenv("TOGETHERAI_API_KEY", "")
 
 # ── Load data ──────────────────────────────────────────────────────────────────
 with open(args.queries, "r", encoding="utf-8") as f:
@@ -115,7 +115,7 @@ def query_llama_deepinfra(prompt):
 
 def query_llama_togetherai_freemodel(prompt):
     together_client = OpenAI(
-        api_key=TOGETHER_API_KEY,
+        api_key=TOGETHERAI_API_KEY,
         base_url="https://api.together.xyz/v1",
     )
     response = together_client.chat.completions.create(
@@ -144,7 +144,7 @@ def query_llama_togetherai_freemodel(prompt):
 
 def query_llama_togetherai(prompt):
     together_client = OpenAI(
-        api_key=TOGETHER_API_KEY,
+        api_key=TOGETHERAI_API_KEY,
         base_url="https://api.together.xyz/v1",
     )
     response = together_client.chat.completions.create(
