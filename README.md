@@ -1,21 +1,23 @@
 # Multi-Hop reasoning with RAG and Chain-of-Agents
-
-Multi-hop QA experiments using the MultiHopRAG dataset across baselines and our RAG+CoA solution.
-Baselines: full-context LLMs, RAG+LLMs, a Chain-of-Agents (CoA) 
-Our solution: A combined RAG + CoA solution.
 ---
 
 ## Architecture
 
-![alt text](architecture.png)
+<img src="architecture.png" alt="Architecture" width="600" />
 
-Traditional Retrieval-Augmented Generation (RAG) pipelines struggle with multi-hop reasoning due to retrieval noise, missing intermediate facts, and difficulty in integrating dispersed information across documents. While the Chain-of-Agents (CoA) framework enhances reasoning through sequential information processing, it typically requires processing the entire corpus, which limits its scalability in real world settings. To address these challenges, we propose a hybrid framework that builds upon RAG by incorporating a CoA-style reasoning module. Our system uses a semantic retriever to extract relevant evidence, which is then processed iteratively to distill and integrate critical information before generating a final answer. This structured approach reduces irrelevant content and improves factual consistency. Evaluated on the MultiHop-RAG dataset, our method demonstrates significant improvements in reasoning coherence and answer accuracy over baseline RAG systems.
+Traditional Retrieval-Augmented Generation (RAG) pipelines struggle with multi-hop reasoning due to retrieval noise, missing intermediate facts, and difficulty in integrating dispersed information across documents. 
+
+While the `Chain-of-Agents (CoA)` framework enhances reasoning through sequential information processing, it typically requires processing the entire corpus, which limits its scalability in real world settings. 
+
+To address these challenges, we propose a hybrid framework that builds upon RAG by incorporating a `CoA-style reasoning module`. Our system uses a semantic retriever to extract relevant evidence, which is then processed iteratively to distill and integrate critical information before generating a final answer. This structured approach reduces irrelevant content and improves factual consistency. 
+
+Evaluated on the MultiHop-RAG dataset, our method demonstrates significant improvements in reasoning coherence and answer accuracy over baseline RAG systems.
 
 For more details refer to Final report in `docs/`
 
 ## Results
 
-![alt text](results.png)
+<img src="results.png" alt="Results" width="600" />
 
 ## Dataset - MultiHopRAG
 
@@ -79,7 +81,7 @@ Output: `results.json` — list of `{query, gold, pred}`.
 
 ---
 
-### 2. RAG (`experiments/baselines/RAG/rag.py`)
+### 2. RAG + LLM (`experiments/baselines/RAG/rag.py`)
 
 Indexes the corpus into Qdrant, retrieves top-10 chunks per query, then runs an LLM over retrieved context.
 
