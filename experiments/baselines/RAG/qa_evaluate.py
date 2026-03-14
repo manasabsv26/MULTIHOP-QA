@@ -1,14 +1,22 @@
 import json
+import argparse
 from tqdm import tqdm
 import re
 from collections import Counter
 
+parser = argparse.ArgumentParser(description="Evaluate QA predictions against gold answers.")
+parser.add_argument("--predictions", type=str, default="multihop_qa_256_final_output.json",
+                    help="Path to predictions JSON file (list of {query, answer, question_type}).")
+parser.add_argument("--references", type=str, default="MultiHopRAG.json",
+                    help="Path to MultiHopRAG.json reference file.")
+args = parser.parse_args()
+
 # Read files
 # predictions
-with open('multihop_qa_256_final_output.json', 'r') as file:
+with open(args.predictions, 'r') as file:
     doc_data = json.load(file)
-#references
-with open('MultiHopRAG.json', 'r') as file:
+# references
+with open(args.references, 'r') as file:
     query_data = json.load(file)
 
 # Initialize dictionary to save lists of predictions and gold standards for each question_type

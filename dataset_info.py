@@ -1,7 +1,7 @@
 import json
 
 
-with open('multihoprag/MultiHopRAG.json') as f:
+with open('experiments/multiHopRag-dataset/MultiHopRAG.json') as f:
     query_data = json.load(f)
 
 query_token_count=0
@@ -19,7 +19,7 @@ print(f"Avg. tokens per query: {int(query_token_count/len(query_data))}")
 print(f"Max tokens in a query: {max_len}")
 print()
 
-with open('multihoprag/corpus.json') as f:
+with open('experiments/multiHopRag-dataset/corpus.json') as f:
     corpus_data = json.load(f)
 
 corpus_token_count=0

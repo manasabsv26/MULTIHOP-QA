@@ -3,3 +3,4 @@
 results/
 parse.py
 convert-to-json.py
+__pycache__/

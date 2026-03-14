@@ -12,10 +12,10 @@ parser = argparse.ArgumentParser(description="Process file paths for MultiHopRAG
 parser.add_argument("-r","--root", type=str, required=True, help="Root directory path.")
 parser.add_argument("-o", "--output_file_name", type=str, required=True, help="Output file name.")
 parser.add_argument("-c", "--chunk_size", type=int, default=1500, help="Chunk size for splitting text.")
-parser.add_argument("-m", "--model", type=str, default="git checkout -b your-branch-name", help="Model name.")
+parser.add_argument("-m", "--model", type=str, default="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", help="Model name.")
 
-parser.add_argument("--database_file", type=str, default="multihoprag/corpus.json", help="Database file relative to root.")
-parser.add_argument("--query_file", type=str, default="multihoprag/MultiHopRAG.json", help="Query file relative to root.")
+parser.add_argument("--database_file", type=str, default="multiHopRag-dataset/corpus.json", help="Database file relative to root.")
+parser.add_argument("--query_file", type=str, default="multiHopRag-dataset/MultiHopRAG.json", help="Query file relative to root.")
 parser.add_argument("--query_start_id", type=int, default=0, help="Query start id.")
 
 args = parser.parse_args()
@@ -49,7 +49,7 @@ for query in query_samples:
   gold_retrievals = []
   for evidence in query["evidence_list"]:
     gold_retrievals.append(doc2id[evidence["title"]])
-  query["gold_eveidence"] = gold_retrievals
+  query["gold_evidence"] = gold_retrievals
 
 
 """ Code for Chain of Agents"""
@@ -77,10 +77,9 @@ def split_text(documents_list, doc2id, chunk_size):
     chunks = []
     for document in documents_list:
         text = document["text"]
-        doc_id = doc2id[document["title"]]
         words = text.split()
-
-    return [' '.join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
+        chunks.extend([' '.join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)])
+    return chunks
 
 def worker_agent(client, chunk, task_prompt):
     """
@@ -177,7 +176,7 @@ print({i+args.query_start_id:api for i, api in enumerate(API_CALLS)})
 
 """Run the CoA over all the queries"""
 
-client = Together(api_key="a67211c50a58f3a06a06caf34e8115e4b213ef2aaf29690d8a9789a9ea10268") # work
+client = Together(api_key=os.getenv("TOGETHERAI_API_KEY")) # work
 
 q_start_id = args.query_start_id
 

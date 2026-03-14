@@ -5,6 +5,9 @@ import os
 import tqdm
 import json
 import numpy as np
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from llama_index.embeddings.fastembed import FastEmbedEmbedding
 
@@ -21,9 +24,10 @@ parser.add_argument("-o", "--output_file_name", type=str, required=True, help="O
 parser.add_argument("-c", "--chunk_size", type=int, default=500, help="Chunk size for splitting text.")
 parser.add_argument("-m", "--model", type=str, default="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", help="model name.")
 
-parser.add_argument("--database_file", type=str, default="multihoprag/corpus.json", help="Database file relative to root.")
-parser.add_argument("--query_file", type=str, default="multihoprag/MultiHopRAG.json", help="Query file relative to root.")
+parser.add_argument("--database_file", type=str, default="multiHopRag-dataset/corpus.json", help="Database file relative to root.")
+parser.add_argument("--query_file", type=str, default="multiHopRag-dataset/MultiHopRAG.json", help="Query file relative to root.")
 parser.add_argument("--query_start_id", type=int, default=0, help="Query start id.")
+parser.add_argument("--query_end_id", type=int, default=2555, help="Query end id.")
 
 
 args = parser.parse_args()
@@ -71,14 +75,14 @@ for query in query_samples:
 
 #--------------------------------------------------------------------------
 
-def search_similar(query):
+def search_similar(query, l=10):
     query_embedding = embed_model.get_text_embedding(query)
     
     # Search in Qdrant
     search_result = quadrant_client.search(
         collection_name="bge-large-256-embedds",
         query_vector=query_embedding,
-        limit=10
+        limit=l
     )
     data_list = []
     
@@ -160,7 +164,73 @@ class ChainOfAgents():
         manager_input_prompt, final_output = self.manager_agent(worker_outputs, task_prompt, synthesis_prompt)
         input_prompts.append(manager_input_prompt)
         return input_prompts, final_output
-    
+
+    def run_chain_of_agents_with_reretrieval(
+        self,
+        initial_chunks: list,
+        task_prompt,
+        synthesis_prompt
+    ):
+        """
+        Chain-of-Agents with cumulative re-retrieval:
+        - Starts with initial chunks.
+        - After each worker output, retrieves new evidence using (query + output).
+        - Adds only new chunks (not already seen) to the list.
+        - Each iteration processes one chunk in sequence.
+        """
+        prev_summary = ""
+        worker_outputs = []
+        input_prompts = []
+
+        current_chunks = initial_chunks.copy()
+        print("Length of current chunks 0:", len(current_chunks))
+
+        max_steps = len(current_chunks)
+
+        step = 0
+        while  step < len(current_chunks):
+            chunk = current_chunks[step]
+
+            # Combine context with summary
+            context = prev_summary + "\n\n" + chunk
+
+            # Step 1: Ask worker
+            worker_input_prompt, worker_output = self.worker_agent(context, task_prompt)
+
+            # Step 2: Store
+            input_prompts.append(worker_input_prompt)
+            worker_outputs.append(worker_output)
+
+            # Step 3: Update summary
+            prev_summary = worker_output + "\n\n"
+            if step!=0 and step%2==0 and step < max_steps:
+                # Step 4: Re-retrieve
+                new_evidence_list = search_similar(task_prompt + "\n\n" + prev_summary, 4)
+
+                # Step 5: Convert to 2-chunk format, filter duplicates
+                new_chunks = []
+                for i in range(0, len(new_evidence_list), 2):
+                    if i + 1 < len(new_evidence_list):
+                        combined = new_evidence_list[i]['text'] + "\n\n" + new_evidence_list[i + 1]['text']
+                    else:
+                        combined = new_evidence_list[i]['text']
+
+                    new_chunks.append(combined)
+
+                # Step 6: Append only new chunks
+                current_chunks.extend(new_chunks)
+            
+            #print("Length of current chunks: ", len(current_chunks))
+            step += 1
+
+        # Final synthesis
+        manager_input_prompt, final_output = self.manager_agent(
+            worker_outputs, task_prompt, synthesis_prompt
+        )
+
+        input_prompts.append(manager_input_prompt)
+        return input_prompts, final_output
+
     """Code for generating chunks for worker LLMs"""
 
     def generate_context(self, evidence_list, database):
@@ -195,7 +265,7 @@ client = Together(api_key=os.getenv("TOGETHERAI_API_KEY")) # work
 
 
 # Initialize the progress bar
-total_queries = len(query_samples[args.query_start_id:])  # Total queries to process
+total_queries = len(query_samples[args.query_start_id:args.query_end_id])  # Total queries to process
 pbar = tqdm.tqdm(total=total_queries, desc="Queries", dynamic_ncols=True, initial = args.query_start_id+1)
 
 API_CALLS = []
@@ -208,10 +278,10 @@ if not os.path.exists(output_tsv_file):
 # Initialize the Chain of Agents
 coa = ChainOfAgents(client, model=args.model, chunk_size=args.chunk_size)
 
-for idx, query in enumerate(query_samples[args.query_start_id:]):
+for idx, query in enumerate(query_samples[args.query_start_id:args.query_end_id]):
     try: 
         query_title = query['query']
-    
+        print("Query: ", idx)
         # evidence_list = [doc2id[evidence["title"]] for evidence in query["evidence_list"]]
         # context_list = generate_context(evidence_list, database, chunk_size=args.chunk_size)
 
@@ -220,7 +290,11 @@ for idx, query in enumerate(query_samples[args.query_start_id:]):
         # Combine every two pieces of evidence into one context
         context_list = []
         for i in range(0, len(evidence_list), 2):
-            context_list.append(evidence_list[i]['text'] + "\n\n" + evidence_list[i+1]['text'])
+            if i + 1 == len(evidence_list):
+                # Last unpaired element
+                context_list.append(evidence_list[i]['text'])
+            else:
+                context_list.append(evidence_list[i]['text'] + "\n\n" + evidence_list[i+1]['text'])
 
     
         synthesis_prompt = (
@@ -230,13 +304,15 @@ for idx, query in enumerate(query_samples[args.query_start_id:]):
             "Answer directly without explanation."
         )
     
-        input_prompts, result = coa.run_chain_of_agents(context_list, task_prompt=query_title, synthesis_prompt=synthesis_prompt)
+        #input_prompts, result = coa.run_chain_of_agents(context_list, task_prompt=query_title, synthesis_prompt=synthesis_prompt)
+
+        input_prompts, result = coa.run_chain_of_agents_with_reretrieval(context_list, task_prompt=query_title, synthesis_prompt=synthesis_prompt)
 
         # print(f"{input_prompts}\t{result}\t{query['answer']}\n")
         
         API_CALLS.append(len(context_list) + 1)
     
-        with open(output_tsv_file, 'a') as f:
+        with open(output_tsv_file, 'a',encoding='utf-8') as f:
           f.write(f"{input_prompts}\t{result}\t{query['answer']}\n")
     
         save_results.append({"input_list": input_prompts, "prediction": result, "gold": query['answer']})
