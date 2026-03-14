@@ -12,7 +12,7 @@ For more details refer to Final report in `docs/`
 
 ## Architecture
 
-<img src="architecture.png" alt="Architecture" width="300" />
+<img src="architecture-coa.png" alt="Architecture" width="300" />
 
 Our proposed solution is structured around four key stages: embedding and indexing the document corpus, retrieving passages semantically similar to the query, performing iterative reasoning through the CoA module, and generating the final answer using an LLM.
 
@@ -47,7 +47,6 @@ pip install -r requirements.txt
 Create a `.env` file in the repo root (already gitignored):
 ```env
 TOGETHERAI_API_KEY=
-TOGETHER_API_KEY=
 QUADRANT_DB_URL=
 QUADRANT_API_KEY=
 KINDO_API_KEY=
