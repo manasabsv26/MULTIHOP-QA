@@ -1,10 +1,23 @@
-# MULTIHOP-QA
+# Multi-Hop reasoning with RAG and Chain-of-Agents
 
-Multi-hop QA experiments using the MultiHopRAG dataset across three approaches: a full-context LLaMA baseline, a RAG baseline, a Chain-of-Agents (CoA) baseline, and a combined RAG + CoA solution.
-
+Multi-hop QA experiments using the MultiHopRAG dataset across baselines and our RAG+CoA solution.
+Baselines: full-context LLMs, RAG+LLMs, a Chain-of-Agents (CoA) 
+Our solution: A combined RAG + CoA solution.
 ---
 
-## Dataset — MultiHopRAG
+## Architecture
+
+![alt text](architecture.png)
+
+Traditional Retrieval-Augmented Generation (RAG) pipelines struggle with multi-hop reasoning due to retrieval noise, missing intermediate facts, and difficulty in integrating dispersed information across documents. While the Chain-of-Agents (CoA) framework enhances reasoning through sequential information processing, it typically requires processing the entire corpus, which limits its scalability in real world settings. To address these challenges, we propose a hybrid framework that builds upon RAG by incorporating a CoA-style reasoning module. Our system uses a semantic retriever to extract relevant evidence, which is then processed iteratively to distill and integrate critical information before generating a final answer. This structured approach reduces irrelevant content and improves factual consistency. Evaluated on the MultiHop-RAG dataset, our method demonstrates significant improvements in reasoning coherence and answer accuracy over baseline RAG systems.
+
+For more details refer to Final report in `docs/`
+
+## Results
+
+![alt text](results.png)
+
+## Dataset - MultiHopRAG
 
 Located in `experiments/multiHopRag-dataset/`:
 
